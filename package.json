@@ -31,7 +31,9 @@
 			]
 		},
 		"flatpak": {
-			"runtimeVersion": "26.08",
+			"runtime": "org.gnome.Platform",
+			"sdk": "org.gnome.Sdk",
+			"runtimeVersion": "51",
 			"baseVersion": "26.08",
 			"branch": "stable",
 			"files": [

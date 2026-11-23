@@ -1,9 +1,8 @@
-import { app, BrowserWindow, Menu, MenuItem, clipboard, ipcMain, nativeTheme, shell } from "electron";
+import { app, BrowserWindow, Menu, MenuItem, clipboard, dialog, ipcMain, nativeTheme, shell } from "electron";
 import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import dbus from "dbus-next";
-import { importLogin } from "./import-login.js";
 import { googleLocate } from "./geolocate.js";
 
 const APP_ID = "net.donnybeelo.Maps";
@@ -181,7 +180,7 @@ function createWindow() {
 		if (!e.isMainFrame) return;
 		if (SIGN_IN.test(e.url)) {
 			e.preventDefault();
-			runImport(); // Google blocks in-app sign-in; use the browser's cookies instead
+			signIn(e.url);
 			return;
 		}
 		if (IN_APP.test(e.url)) return;
@@ -190,7 +189,7 @@ function createWindow() {
 	});
 	contents.setWindowOpenHandler(({ url }) => {
 		if (SIGN_IN.test(url)) {
-			runImport();
+			signIn(url);
 			return { action: "deny" };
 		}
 		if (url === "about:blank" || IN_APP.test(url)) return { action: "allow" };
@@ -234,8 +233,6 @@ app.whenReady().then(() => {
 	ipcMain.on("location", sendLocation);
 	ipcMain.on("title-bar", (_e, color, height) => setTitleBar(color, height));
 	ipcMain.on("map-pan", (_e, m) => mapPan(m));
-
-	if (process.argv.includes("--import-login")) runImport();
 });
 
 // Pan the map by synthesising a trusted left-button drag from the preload's wheel deltas
@@ -263,14 +260,35 @@ function mapPan(m) {
 	wc.sendInputEvent({ type: "mouseMove", x: Math.round(drag.x), y: Math.round(drag.y), button: "left" });
 }
 
-function runImport() {
-	importLogin(win.webContents.session)
-		.then(() => win.webContents.reload())
-		.catch((e) => console.error("Login import failed:", e.message));
+// Sign in through a WebKitGTK window (assets/signin.js) and copy its cookies into this session
+let signingIn = false;
+function signIn(url) {
+	if (signingIn) return;
+	signingIn = true;
+	const child = spawn("gjs", [path.join(ASSETS, "signin.js"), path.join(app.getPath("userData"), "signin"), url]);
+	let out = "";
+	child.stdout.on("data", (chunk) => (out += chunk));
+	child.stderr.on("data", (chunk) => process.stderr.write(chunk));
+	child.on("error", (e) => {
+		signingIn = false;
+		dialog.showMessageBox(win, { type: "error", message: "Couldn't open the sign-in window", detail: e.message });
+	});
+	child.on("close", async (code) => {
+		signingIn = false;
+		if (code !== 0) return;
+		for (const c of JSON.parse(out)) {
+			await win.webContents.session.cookies.set({
+				url: `https://${c.domain.replace(/^\./, "")}${c.path}`,
+				name: c.name, value: c.value, path: c.path,
+				domain: c.domain.startsWith(".") ? c.domain : undefined,
+				secure: c.secure, httpOnly: c.httpOnly, sameSite: c.sameSite, expirationDate: c.expires ?? undefined,
+			}).catch((e) => console.error(`cookie ${c.name} failed:`, e.message));
+		}
+		win.webContents.reload();
+	});
 }
 
 app.on("second-instance", (_e, argv) => {
-	if (argv.includes("--import-login")) runImport();
 	const url = argv.find((a) => IN_APP.test(a));
 	if (url) win.webContents.loadURL(url);
 	if (win.isMinimized()) win.restore();
