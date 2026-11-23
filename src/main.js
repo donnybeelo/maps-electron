@@ -232,33 +232,7 @@ app.whenReady().then(() => {
 
 	ipcMain.on("location", sendLocation);
 	ipcMain.on("title-bar", (_e, color, height) => setTitleBar(color, height));
-	ipcMain.on("map-pan", (_e, m) => mapPan(m));
 });
-
-// Pan the map by synthesising a trusted left-button drag from the preload's wheel deltas
-let drag = null;
-function mapPan(m) {
-	const wc = win.webContents;
-	if (m.end) {
-		if (drag) wc.sendInputEvent({ type: "mouseUp", x: drag.x, y: drag.y, button: "left", clickCount: 1 });
-		drag = null;
-		return;
-	}
-	const [w, h] = win.getContentSize();
-	if (!drag) {
-		drag = { x: Math.round(w / 2), y: Math.round(h / 2) }; // centre: most travel before re-anchoring
-		wc.sendInputEvent({ type: "mouseDown", x: drag.x, y: drag.y, button: "left", clickCount: 1 });
-	}
-	drag.x += m.dx; // keep fractional; round only for the synthesised event
-	drag.y += m.dy;
-	// re-anchor before the drag drifts off the window
-	if (drag.x < 90 || drag.x > w - 90 || drag.y < 90 || drag.y > h - 90) {
-		wc.sendInputEvent({ type: "mouseUp", x: Math.round(drag.x), y: Math.round(drag.y), button: "left", clickCount: 1 });
-		drag = { x: Math.round(w / 2), y: Math.round(h / 2) };
-		wc.sendInputEvent({ type: "mouseDown", x: drag.x, y: drag.y, button: "left", clickCount: 1 });
-	}
-	wc.sendInputEvent({ type: "mouseMove", x: Math.round(drag.x), y: Math.round(drag.y), button: "left" });
-}
 
 // Sign in through a WebKitGTK window (assets/signin.js) and copy its cookies into this session
 let signingIn = false;

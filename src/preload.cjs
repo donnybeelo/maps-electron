@@ -38,12 +38,11 @@ function scrollablePanel(el) {
 	}
 	return false;
 }
-let pending = null, rafId = 0, panEnd;
-function flushPan() {
-	rafId = 0;
-	if (!pending) return;
-	ipcRenderer.send("map-pan", { dx: pending.dx, dy: pending.dy }); // keep fractions; main rounds only the final position
-	pending = null;
+let pan = null, panEnd;
+function drag(kind, buttons) {
+	const init = { bubbles: true, cancelable: true, clientX: pan.x, clientY: pan.y, button: 0, buttons, pointerId: 1, pointerType: "mouse", isPrimary: true };
+	pan.target.dispatchEvent(new PointerEvent(`pointer${kind}`, init));
+	pan.target.dispatchEvent(new MouseEvent(`mouse${kind}`, init));
 }
 window.addEventListener("wheel", (e) => {
 	if (!e.isTrusted) return; // let the dark-theme script's synthetic redraw wheel reach Maps
@@ -51,15 +50,18 @@ window.addEventListener("wheel", (e) => {
 	e.preventDefault();
 	e.stopImmediatePropagation(); // keep Maps from also zooming on this wheel
 	const unit = (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1) * PAN_GAIN; // -> pixels, scaled
-	pending ??= { dx: 0, dy: 0 };
-	pending.dx -= e.deltaX * unit;
-	pending.dy -= e.deltaY * unit;
-	rafId ||= requestAnimationFrame(flushPan); // one move per frame, tracks 1:1
+	if (!pan) {
+		pan = { target: e.target, x: e.clientX, y: e.clientY };
+		drag("down", 1);
+		pan.x += 10; drag("move", 1); pan.x -= 10; drag("move", 1);
+	}
+	pan.x -= e.deltaX * unit;
+	pan.y -= e.deltaY * unit;
+	drag("move", 1);
 	clearTimeout(panEnd);
 	panEnd = setTimeout(() => {
-		if (rafId) cancelAnimationFrame(rafId), (rafId = 0);
-		flushPan();
-		ipcRenderer.send("map-pan", { end: true });
+		drag("up", 0);
+		pan = null;
 	}, 120);
 }, { capture: true, passive: false });
 
