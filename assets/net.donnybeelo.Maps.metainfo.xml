@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>net.donnybeelo.Maps</id>
+  <name>Google Maps</name>
+  <summary>Unofficial Google Maps desktop client</summary>
+  <developer id="net.donnybeelo">
+    <name>Daniel Elia</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>ISC</project_license>
+  <description>
+    <p>
+      An unofficial desktop client for Google Maps, built with Electron. Adds GNOME-style
+      window controls and gets your location from the desktop's location service.
+    </p>
+    <p>Not affiliated with or endorsed by Google.</p>
+  </description>
+  <launchable type="desktop-id">net.donnybeelo.Maps.desktop</launchable>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.0" date="2026-11-22"/>
+  </releases>
+</component>

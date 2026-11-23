@@ -1,0 +1,68 @@
+{
+	"name": "maps",
+	"productName": "Google Maps",
+	"desktopName": "net.donnybeelo.Maps.desktop",
+	"version": "1.0.0",
+	"description": "An unofficial Google Maps desktop client built with Electron.",
+	"author": "Daniel Elia <d.elia@outlook.com> (https://donnybeelo.net)",
+	"license": "ISC",
+	"main": "./src/main.js",
+	"type": "module",
+	"scripts": {
+		"start": "electron .",
+		"dist:linux": "electron-builder --linux --x64 --publish=never"
+	},
+	"build": {
+		"appId": "net.donnybeelo.Maps",
+		"npmRebuild": false,
+		"files": [
+			"src/**",
+			"assets/**",
+			"package.json"
+		],
+		"asarUnpack": [
+			"assets/**"
+		],
+		"linux": {
+			"icon": "./assets/maps-512x512.png",
+			"category": "Utility",
+			"target": [
+				"flatpak"
+			]
+		},
+		"flatpak": {
+			"runtimeVersion": "26.08",
+			"baseVersion": "26.08",
+			"branch": "stable",
+			"files": [
+				[
+					"assets/net.donnybeelo.Maps.metainfo.xml",
+					"/share/metainfo/net.donnybeelo.Maps.metainfo.xml"
+				],
+				[
+					"assets/maps-symbolic.svg",
+					"/share/icons/hicolor/symbolic/apps/net.donnybeelo.Maps-symbolic.svg"
+				]
+			],
+			"finishArgs": [
+				"--socket=wayland",
+				"--socket=fallback-x11",
+				"--share=ipc",
+				"--device=dri",
+				"--share=network",
+				"--talk-name=org.freedesktop.Notifications",
+				"--system-talk-name=org.freedesktop.NetworkManager"
+			]
+		}
+	},
+	"trustedDependencies": [
+		"electron"
+	],
+	"dependencies": {
+		"dbus-next": "^0.10.2"
+	},
+	"devDependencies": {
+		"electron": "^43.2.0",
+		"electron-builder": "^26.15.3"
+	}
+}
