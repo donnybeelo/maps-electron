@@ -135,9 +135,10 @@ div[style*="max-width: calc(100% -"] { box-sizing: border-box; padding-right: va
 [role=search] { translate: 0 -4px; }
 /* Dark mode puts an invert filter on the chips wrapper, trapping its z-index below the bar; lift it back above */
 html.gm-dark div:has(> div[style*="max-width: calc(100% -"]) { position: relative !important; z-index: 3 !important; }
-/* The hamburger menu panel's wrapper is likewise filter-trapped behind the map; lift it above everything */
-html.gm-dark .gm-flt:has([role=menuitem]) { position: relative !important; z-index: 30 !important; }
-.Owrmqf > :nth-child(n+2) { translate: 0 14px; -webkit-app-region: no-drag; }
+/* The hamburger menu panel's wrapper fills the window above everything, but only its contents take clicks */
+html.gm-dark .gm-flt:has([role=menuitem]) { position: absolute !important; inset: 0 !important; z-index: 30 !important; pointer-events: none; }
+html.gm-dark .gm-flt:has([role=menuitem]) > * { pointer-events: auto; }
+html.gm-dark img[src*="/branding/lockups/"] { filter: none !important; }.Owrmqf > :nth-child(n+2) { translate: 0 14px; -webkit-app-region: no-drag; }
 :is(.Owrmqf, div:has(> #gb), div[style*="max-width: calc(100% -"], div:has(> div[style*="max-width: calc(100% -"])) { -webkit-app-region: drag; }
 :is([role=search], ${RAIL} button, :is(div:has(> #gb), div[style*="max-width: calc(100% -"]) :is(button, a, input, [role=button], [role=combobox], [tabindex="0"]):not(.maps-desktop-clipped)) { -webkit-app-region: no-drag; }
 html.gm-dark.gm-split .gm-flt:has(ul[role=list] button[aria-label="Menu"]) { filter: none !important; background: transparent !important; isolation: isolate; }
