@@ -240,16 +240,23 @@ function signIn(url) {
 	if (signingIn) return;
 	signingIn = true;
 	const child = spawn("gjs", [path.join(ASSETS, "signin.js"), path.join(app.getPath("userData"), "signin"), url]);
-	let out = "";
+	let out = "", err = "";
 	child.stdout.on("data", (chunk) => (out += chunk));
-	child.stderr.on("data", (chunk) => process.stderr.write(chunk));
+	child.stderr.on("data", (chunk) => {
+		err += chunk;
+		process.stderr.write(chunk);
+	});
 	child.on("error", (e) => {
 		signingIn = false;
 		dialog.showMessageBox(win, { type: "error", message: "Couldn't open the sign-in window", detail: e.message });
 	});
 	child.on("close", async (code) => {
 		signingIn = false;
-		if (code !== 0) return;
+		if (code === 1 || code < 0) return;
+		if (code !== 0) {
+			dialog.showMessageBox(win, { type: "error", message: "The sign-in window crashed", detail: err.trim().split("\n").slice(-5).join("\n") });
+			return;
+		}
 		for (const c of JSON.parse(out)) {
 			await win.webContents.session.cookies.set({
 				url: `https://${c.domain.replace(/^\./, "")}${c.path}`,
