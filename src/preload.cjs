@@ -121,7 +121,7 @@ const CORNER = 16;
 const RAIL = 'ul[role=list]:has(button[aria-label="Menu"])';
 const STYLE = `
 @keyframes maps-fade-in { from { opacity: 0; } }
-#maps-desktop-bar { position: absolute; inset: 0 0 auto 0; height: ${BAR_HEIGHT}px; z-index: 2; background: var(--maps-desktop-bar); -webkit-app-region: drag; opacity: 0; }
+#maps-desktop-bar { position: absolute; inset: 0 0 auto 0; height: var(--maps-desktop-bar-height, ${BAR_HEIGHT}px); z-index: 2; background: var(--maps-desktop-bar); -webkit-app-region: drag; opacity: 0; }
 #maps-desktop-bar.ready { opacity: 1; animation: maps-fade-in 0.35s ease; }
 #maps-desktop-bar::after {
 	content: ""; position: absolute; top: 100%; left: var(--maps-desktop-rail, 72px); width: ${CORNER}px; height: ${CORNER}px; pointer-events: none;
@@ -139,9 +139,20 @@ html.gm-dark div:has(> div[style*="max-width: calc(100% -"]) { position: relativ
 html.gm-dark .gm-flt:has([role=menuitem]) { position: absolute !important; inset: 0 !important; z-index: 30 !important; pointer-events: none; }
 html.gm-dark .gm-flt:has([role=menuitem]) > * { pointer-events: auto; }
 html.gm-dark img[src*="/branding/lockups/"] { filter: none !important; }
-:root, :root * { scroll-axis-lock: none; }.Owrmqf > :nth-child(n+2) { translate: 0 14px; -webkit-app-region: no-drag; }
+:root, :root * { scroll-axis-lock: none; }
+.maps-desktop-compact .Owrmqf:has(.xoLGzf) { width: var(--maps-desktop-search-width, calc(100vw - 108px - var(--buttons-width))); }
+.maps-desktop-panel-top .Owrmqf { top: ${BAR_HEIGHT - 4}px !important; }
+.maps-desktop-panel-top .e07Vkf:has([role=main]) { top: ${BAR_HEIGHT - 8}px !important; bottom: 0 !important; height: auto !important; }
+.maps-desktop-panel-top .FkdJRd { width: calc(100% - 52px) !important; }
+.maps-desktop-panel-top .YismEf { right: 4px !important; }
+.maps-desktop-compact .xoLGzf ~ :not([role=grid]) { width: calc(100vw - 16px); }
+.maps-desktop-compact .xoLGzf ~ :not([role=grid]) :is(.k7jAl, .aIFcqe) { width: 100% !important; max-width: none !important; }
+.maps-desktop-compact [role=search] [style*="width"] { max-width: 100% !important; }
+.maps-desktop-compact .xoLGzf { max-width: calc(100% - 20px); }
+.maps-desktop-compact [role=search] { translate: 0 4px; }
+.Owrmqf > :nth-child(n+2) { translate: 0 14px; -webkit-app-region: no-drag; }
 :is(.Owrmqf, div:has(> #gb), div[style*="max-width: calc(100% -"], div:has(> div[style*="max-width: calc(100% -"])) { -webkit-app-region: drag; }
-:is([role=search], ${RAIL} button, :is(div:has(> #gb), div[style*="max-width: calc(100% -"]) :is(button, a, input, [role=button], [role=combobox], [tabindex="0"]):not(.maps-desktop-clipped)) { -webkit-app-region: no-drag; }
+:is([role=search], ${RAIL} button, :is(div:has(> #gb), div[style*="max-width: calc(100% -"], .Owrmqf) :is(button, a, input, [role=button], [role=combobox], [tabindex="0"]):not(.maps-desktop-clipped)) { -webkit-app-region: no-drag; }
 html.gm-dark.gm-split .gm-flt:has(ul[role=list] button[aria-label="Menu"]) { filter: none !important; background: transparent !important; isolation: isolate; }
 html.gm-dark.gm-split .gm-flt:has(ul[role=list] button[aria-label="Menu"])::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgb(30, 30, 30); }
 html.gm-dark.gm-split .gm-flt:has(ul[role=list] button[aria-label="Menu"]) > * { filter: invert(0.9) hue-rotate(180deg) !important; }
@@ -171,6 +182,16 @@ window.addEventListener("DOMContentLoaded", () => {
 		const sideRight = side?.getBoundingClientRect().right ?? 0;
 		document.documentElement.style.setProperty("--maps-desktop-rail", `${sideRight}px`);
 		bar.classList.toggle("no-corner", !sideRight);
+		const compact = !rail?.getBoundingClientRect().width;
+		document.documentElement.classList.toggle("maps-desktop-compact", compact);
+		document.documentElement.classList.toggle("maps-desktop-panel-top", compact && !document.querySelector(".Owrmqf .xoLGzf"));
+		const account = [...document.querySelectorAll("#gb a, #gb img, #gb button")].map((e) => e.getBoundingClientRect()).filter((r) => r.width);
+		const searchBox = document.querySelector(".Owrmqf")?.getBoundingClientRect();
+		if (account.length && searchBox) document.documentElement.style.setProperty("--maps-desktop-search-width", `${Math.min(...account.map((r) => r.left)) - searchBox.left + 12}px`);
+		let searchBottom = 0;
+		const parts = [...document.querySelectorAll("[role=search] > :not([role=grid])")].map((e) => e.getBoundingClientRect()).filter((r) => r.height);
+		for (const r of parts.sort((a, b) => a.top - b.top)) if (!searchBottom || r.top <= searchBottom + 16) searchBottom = Math.max(searchBottom, r.bottom);
+		document.documentElement.style.setProperty("--maps-desktop-bar-height", `${Math.max(BAR_HEIGHT, Math.round(searchBottom) + 8)}px`);
 		rail?.classList.add("maps-desktop-probe");
 		const color = rail && getComputedStyle(rail).backgroundColor;
 		rail?.classList.remove("maps-desktop-probe");
